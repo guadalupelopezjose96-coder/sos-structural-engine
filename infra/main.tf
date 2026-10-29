@@ -2,6 +2,13 @@
 # ORGANIZACIÓN: guadalupelopezjose96-org (ID: 320717657398)
 # ARQUITECTURA: Master Blueprint OpenTofu - Infraestructura Zero-Trust Multi-Plano
 # NORMATIVA: NIST SP 800-53 Rev. 5 (SC-2, SC-3, SC-7), SOC 2 Tipo II, AAUFSA 2026
+# DOMINIOS CORPORATIVOS CERTIFICADOS (REGLA 3/7):
+# - "877771073297"
+# - "964521086569"
+# - "188680247367"
+# - "1087754464927"
+# - "282230018778"
+# - "358233233"
 # AUTOR: José Emanuel Guadalupe López <arquitectura@guadalupelopezjose96-org.internal>
 # =============================================================================
 
@@ -11,14 +18,6 @@ terraform {
     aws = {
       source  = "hashicorp/aws"
       version = "~> 5.0"
-    }
-    cloudflare = {
-      source  = "cloudflare/cloudflare"
-      version = "~> 4.0"
-    }
-    random = {
-      source  = "hashicorp/random"
-      version = "~> 3.5"
     }
   }
 }
@@ -178,7 +177,7 @@ resource "aws_iam_role" "github_actions_ci_role" {
 # -----------------------------------------------------------------------------
 output "vpc_id" {
   value       = aws_vpc.sos_core_vpc.id
-  description = "Identificador de la VPC núcleo"
+  description = "Identificador de la VPC nucleo"
 }
 
 output "github_oidc_role_arn" {
