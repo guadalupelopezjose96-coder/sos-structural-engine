@@ -1,7 +1,14 @@
 // =============================================================================
 // ORGANIZACIÓN: guadalupelopezjose96-org (ID: 320717657398)
+// DOMINIOS CORPORATIVOS VINCULADOS (NIST SP 800-53 / SC-2 / SC-7):
+// - 320717657398: Matriz Corporativa / Control Central
+// - 188680247367: AuraIntelCore-com (Fiscal / Ledger Engine)
+// - 877771073297: AuraTetrax-com (VPP Telemetry & Dispatch)
+// - 417859876210: AlphaPulse-com
+// - 529810349812: CyberShield-com
+// - 630921478531: QuantumData-com
 // COMPONENTE: Virtual Power Plant (VPP) DER Telemetry & Dispatch Contract
-// NORMATIVA: IEEE 2030.5 / OpenADR 2.0b / NIST SP 800-53 (SC-2, SC-7)
+// NORMATIVA: IEEE 2030.5 / OpenADR 2.0b / NIST SP 800-53 Rev. 5
 // =============================================================================
 
 use crate::{CorporateDomain, StructuralError};
@@ -75,11 +82,11 @@ pub fn compute_deterministic_vpp_dispatch(
 
         if remaining_needed > 0 && asset.available_headroom_milliwatts > 0 {
             let take = remaining_needed.min(asset.available_headroom_milliwatts);
-            allocated_milliwatts = allocated_milliwatts.checked_add(take).ok_or_else(|| {
-                StructuralError::ArithmeticOverflowOrPrecisionFault {
+            allocated_milliwatts = allocated_milliwatts
+                .checked_add(take)
+                .ok_or_else(|| StructuralError::ArithmeticOverflowOrPrecisionFault {
                     context: "Desbordamiento en suma de despacho DER".to_string(),
-                }
-            })?;
+                })?;
             remaining_needed = remaining_needed.saturating_sub(take);
             active_count = active_count.saturating_add(1);
         }
