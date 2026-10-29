@@ -1,0 +1,42 @@
+name: Systems Structure & AAUFSA Compliance Engine CI
+
+on:
+  push:
+    branches: [ "main" ]
+    tags: [ "v*" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  audit-and-verify:
+    name: Structural Architecture, DAG & Fiscal Compliance
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust Stable & Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Cargo Format Check
+        run: cargo fmt --all --check
+
+      - name: Strict Clippy Lints (No Floats / No Unsafe)
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: Execute Deterministic Tests (DAG & AAUFSA IRC 414/1563)
+        run: cargo test --verbose
+
+      - name: Run Systems Structure Policy-as-Code Auditor
+        run: ./scripts/verify_systems_structure_compliance.sh
+
+      - name: Verify Working Tree Hygiene
+        run: |
+          git status --porcelain
+          test -z "$(git status --porcelain)"
