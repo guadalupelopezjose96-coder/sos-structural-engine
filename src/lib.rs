@@ -1,3 +1,4 @@
+pub mod vpp;
 // =============================================================================
 // ORGANIZACIÓN: guadalupelopezjose96-org (ID: 320717657398 — Tech Arquitecture Pro-Elite)
 // COMPONENTE: System-of-Systems Topology, Bulkhead Isolation & AAUFSA Ledger Engine
