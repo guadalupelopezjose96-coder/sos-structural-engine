@@ -1,0 +1,24 @@
+[package]
+name = "sos-structural-engine"
+version = "1.0.0"
+edition = "2021"
+rust-version = "1.75"
+authors = ["José Emanuel Guadalupe López <arquitectura@guadalupelopezjose96-org.internal>"]
+license = "Apache-2.0 AND LicenseRef-AAUFSA-Strict-Attribution"
+description = "System-of-Systems Topology, Bulkhead Isolation & AAUFSA Controlled-Group Ledger Engine for guadalupelopezjose96-org (320717657398)"
+publish = false
+
+[dependencies]
+rust_decimal = { version = "1.36.0", default-features = false, features = ["std", "serde"] }
+rust_decimal_macros = "1.36.0"
+serde = { version = "1.0.210", default-features = false, features = ["derive", "alloc"] }
+serde_json = { version = "1.0.128", default-features = false, features = ["std"] }
+sha2 = { version = "0.10.8", default-features = false, features = ["std"] }
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = "symbols"
+overflow-checks = true
