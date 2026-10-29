@@ -1,33 +1,33 @@
 # =============================================================================
-# ORGANIZACIÓN: guadalupelopezjose96-org (320717657398)
-# ARTEFACTO: Imagen OCI de Producción - Compilación Determinista Estática (musl)
+# ARTEFACTO: sos-structural-engine (OCI Container Image)
+# VERSIÓN: 1.2.0
+# ORGANIZACIÓN: guadalupelopezjose96-org (ID: 320717657398)
+# BASELINE: Scratch minimalista inmutable (Zero-Trust Attack Surface)
 # =============================================================================
 
-# Etapa 1: Compilación estática
-FROM rust:1.75-alpine AS builder
+# --- Stage 1: Build & Verify ---
+FROM rust:1.80-alpine AS builder
 
-RUN apk add --no-cache musl-dev
+RUN apk add --no-cache musl-dev perl make
 
-WORKDIR /build
+WORKDIR /usr/src/sos-structural-engine
+COPY . .
 
-COPY Cargo.toml Cargo.lock ./
-COPY src ./src
+# Compilación estática pura sin glibc
+RUN cargo build --release --locked
 
-ENV RUSTFLAGS="-C target-feature=+crt-static -C panic=abort -C link-arg=-s"
-
-RUN cargo build --release --target x86_64-unknown-linux-musl
-
-# Etapa 2: Imagen de ejecución minimalista de superficie cero
+# --- Stage 2: Final Immutable Runtime ---
 FROM scratch
 
 LABEL org.opencontainers.image.title="sos-structural-engine" \
-      org.opencontainers.image.description="System-of-Systems Topology & AAUFSA Ledger Engine" \
+      org.opencontainers.image.version="1.2.0" \
       org.opencontainers.image.vendor="guadalupelopezjose96-org" \
-      org.opencontainers.image.authors="José Emanuel Guadalupe López" \
-      org.opencontainers.image.version="1.0.0"
+      org.opencontainers.image.licenses="Apache-2.0" \
+      org.opencontainers.image.description="Deterministic VPP dispatch and fiscal ledger engine"
 
-COPY --from=builder /build/target/x86_64-unknown-linux-musl/release/sos-structural-engine /sos-structural-engine
+# Copiar únicamente el binario compilado de forma estática
+COPY --from=builder /usr/src/sos-structural-engine/target/release/sos-structural-engine /sos-structural-engine
+COPY --from=builder /usr/src/sos-structural-engine/STRUCTURAL_COMPLIANCE_MANIFEST.sha256 /STRUCTURAL_COMPLIANCE_MANIFEST.sha256
 
 USER 65534:65534
-
 ENTRYPOINT ["/sos-structural-engine"]
