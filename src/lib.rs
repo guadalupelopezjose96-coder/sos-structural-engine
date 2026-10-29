@@ -18,6 +18,7 @@
     clippy::panic,
     clippy::wildcard_imports
 )]
+#![allow(clippy::struct_excessive_bools)]
 
 use rust_decimal::Decimal;
 use rust_decimal::RoundingStrategy;
@@ -69,9 +70,6 @@ impl CorporateDomain {
 }
 
 /// Planos estructurales del Sistema de Sistemas (NIST SP 800-53 SC-2 / SC-3).
-/// El orden jerárquico permitido en el Grafo Acíclico Dirigido (DAG) es estrictamente:
-/// `ControlPlane (0) -> DataPlaneVpp (1) -> FiscalPlaneAaufsa (2)`.
-/// Cualquier dependencia en sentido inverso constituye una violación de frontera.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub enum SystemPlane {
     ControlPlane = 0,
@@ -129,7 +127,7 @@ impl fmt::Display for StructuralError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::CyclicDependencyDetected { involved_nodes } => {
-                write!(f, "Violación DAG: Ciclo detectado en nodos {:?}", involved_nodes)
+                write!(f, "Violación DAG: Ciclo detectado en nodos {involved_nodes:?}")
             }
             Self::IllegalCrossPlaneReverseCoupling {
                 from_node,
@@ -138,11 +136,10 @@ impl fmt::Display for StructuralError {
                 to_plane,
             } => write!(
                 f,
-                "Violación NIST SC-2/SC-3: Acoplamiento inverso ilegal desde {} ({:?}) hacia {} ({:?})",
-                from_node, from_plane, to_node, to_plane
+                "Violación NIST SC-2/SC-3: Acoplamiento inverso ilegal desde {from_node} ({from_plane:?}) hacia {to_node} ({to_plane:?})"
             ),
             Self::UnknownComponentReference { component_id } => {
-                write!(f, "Referencia estructural inexistente: {}", component_id)
+                write!(f, "Referencia estructural inexistente: {component_id}")
             }
             Self::BulkheadCapacityExceeded {
                 domain,
@@ -151,27 +148,24 @@ impl fmt::Display for StructuralError {
                 available_slots,
             } => write!(
                 f,
-                "Violación Bulkhead en {:?}/{:?}: solicitado {}, disponible {}",
-                domain, plane, requested_slots, available_slots
+                "Violación Bulkhead en {domain:?}/{plane:?}: solicitado {requested_slots}, disponible {available_slots}"
             ),
             Self::ArithmeticOverflowOrPrecisionFault { context } => {
-                write!(f, "Fallo aritmético determinista en contexto: {}", context)
+                write!(f, "Fallo aritmético determinista en contexto: {context}")
             }
             Self::InvalidControlledGroupOwnership {
                 entity_id,
                 reported_percentage,
             } => write!(
                 f,
-                "Porcentaje de propiedad inválido en entidad {}: {}",
-                entity_id, reported_percentage
+                "Porcentaje de propiedad inválido en entidad {entity_id}: {reported_percentage}"
             ),
             Self::UnbalancedDoubleEntryLedger {
                 total_debits_usd,
                 total_credits_usd,
             } => write!(
                 f,
-                "Violación ACID Partida Doble: Débitos ({}) != Créditos ({})",
-                total_debits_usd, total_credits_usd
+                "Violación ACID Partida Doble: Débitos ({total_debits_usd}) != Créditos ({total_credits_usd})"
             ),
             Self::EmptyControlledGroup => {
                 write!(f, "El grupo controlado bajo IRC Sec. 414/1563 no contiene entidades")
@@ -183,7 +177,7 @@ impl fmt::Display for StructuralError {
 impl std::error::Error for StructuralError {}
 
 // =============================================================================
-// 1. VERIFICADOR DE TOPOLOGÍA DAG Y AISLAMIENTO DE PLANOS (ISO 21839 / NIST SC-2)
+// 1. VERIFICADOR DE TOPOLOGÍA DAG Y AISLAMIENTO DE PLANOS
 // =============================================================================
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -216,13 +210,10 @@ impl SoSTopologyVerifier {
         self.nodes.insert(node.component_id.clone(), node);
     }
 
-    /// Registra una arista dirigida validando que no viole el particionamiento de planos.
-    /// Regla de flujo unidireccional: `ControlPlane (0) -> DataPlaneVpp (1) -> FiscalPlaneAaufsa (2)`.
-    /// No se permite que `FiscalPlaneAaufsa` invoque hacia `DataPlaneVpp` o `ControlPlane`,
-    /// ni que `DataPlaneVpp` invoque hacia `ControlPlane`.
+    /// Registra una arista dirigida validando separación jerárquica de planos.
     ///
     /// # Errors
-    /// Retorna `StructuralError` si un nodo no existe o si viola la jerarquía de planos.
+    /// Retorna `StructuralError` si un nodo no existe o viola el orden de planos.
     pub fn add_dependency(&mut self, edge: &DirectedEdge) -> Result<(), StructuralError> {
         let src = self.nodes.get(&edge.source_id).ok_or_else(|| {
             StructuralError::UnknownComponentReference {
@@ -250,11 +241,10 @@ impl SoSTopologyVerifier {
         Ok(())
     }
 
-    /// Ejecuta el algoritmo de Kahn para garantizar ausencia absoluta de ciclos (DAG)
-    /// y devuelve el orden topológico determinista de inicialización/despliegue.
+    /// Algoritmo de Kahn para validar DAG acíclico.
     ///
     /// # Errors
-    /// Retorna `StructuralError::CyclicDependencyDetected` si existe cualquier ciclo.
+    /// Retorna `StructuralError::CyclicDependencyDetected` si se detecta un ciclo.
     pub fn verify_dag_and_topological_sort(&self) -> Result<Vec<String>, StructuralError> {
         let mut in_degree: BTreeMap<String, usize> = BTreeMap::new();
         for node_id in self.nodes.keys() {
@@ -307,7 +297,7 @@ impl SoSTopologyVerifier {
 }
 
 // =============================================================================
-// 2. AISLAMIENTO BULKHEAD POR DOMINIO Y PLANO + AGREGACIÓN VPP DETERMINISTA
+// 2. AISLAMIENTO BULKHEAD Y TELEMETRÍA DETERMINISTA
 // =============================================================================
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -336,10 +326,10 @@ impl BulkheadQuota {
         }
     }
 
-    /// Adquiere capacidad aislada dentro del compartimento sin afectar otros dominios.
+    /// Intenta adquirir cuota de ejecución aislada.
     ///
     /// # Errors
-    /// Retorna `StructuralError::BulkheadCapacityExceeded` si se supera la cuota del compartimento.
+    /// Retorna `StructuralError::BulkheadCapacityExceeded` si excede el límite.
     pub fn try_acquire(&mut self, requested_slots: u32) -> Result<(), StructuralError> {
         let available = self.max_concurrent_slots.saturating_sub(self.active_slots);
         if requested_slots > available {
@@ -359,8 +349,6 @@ impl BulkheadQuota {
     }
 }
 
-/// Nodo de Recursos Energéticos Distribuidos (DER) en `AuraIntel VPP` (Plano de Datos).
-/// Emplea exclusivamente aritmética entera en mili-vatios (mW) para evitar coma flotante.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct VppDerNodeTelemetry {
     pub node_id: String,
@@ -370,10 +358,10 @@ pub struct VppDerNodeTelemetry {
     pub response_latency_microseconds: u64,
 }
 
-/// Agrega de forma determinista la potencia despachada en `AuraIntel VPP`.
+/// Agregación determinista de setpoints sin coma flotante.
 ///
 /// # Errors
-/// Retorna `StructuralError::ArithmeticOverflowOrPrecisionFault` si un setpoint excede la capacidad.
+/// Retorna `StructuralError::ArithmeticOverflowOrPrecisionFault` en caso de sobrecapacidad o desbordamiento.
 pub fn aggregate_vpp_dispatch_milliwatts(
     nodes: &[VppDerNodeTelemetry],
     target_domain: CorporateDomain,
@@ -402,44 +390,34 @@ pub fn aggregate_vpp_dispatch_milliwatts(
 }
 
 // =============================================================================
-// 3. MOTOR FISCAL AAUFSA (IRC CAPÍTULO 56: SECS. 5000F, 5000G, 5000H & SEC. 4)
+// 3. MOTOR FISCAL AAUFSA (IRC CAPÍTULO 56 & SEC. 4)
 // =============================================================================
 
-/// Constantes estatutarias inmutables de la `AAUFSA` (0% Alteración permitida).
-pub const AAUFSA_EXCISE_TAX_RATE: Decimal = dec!(0.1530); // 15.30% (Sec. 5000F(b))
-pub const AAUFSA_CONTROLLED_GROUP_THRESHOLD_USD: Decimal = dec!(5000000.00); // $5,000,000.00 (Sec. 5000G(b))
-pub const AAUFSA_SAFE_HARBOR_MIN_MONTHS: u32 = 36; // 36 meses continuos (Sec. 5000G(a))
-pub const AAUFSA_TRUST_SPLIT_OASDI_RATE: Decimal = dec!(0.7500); // 75% Social Security (Sec. 4(a)(1))
-pub const AAUFSA_TRUST_SPLIT_RESKILLING_RATE: Decimal = dec!(0.2500); // 25% Workforce Reskilling (Sec. 4(a)(2))
+pub const AAUFSA_EXCISE_TAX_RATE: Decimal = dec!(0.1530);
+pub const AAUFSA_CONTROLLED_GROUP_THRESHOLD_USD: Decimal = dec!(5000000.00);
+pub const AAUFSA_SAFE_HARBOR_MIN_MONTHS: u32 = 36;
+pub const AAUFSA_TRUST_SPLIT_OASDI_RATE: Decimal = dec!(0.7500);
+pub const AAUFSA_TRUST_SPLIT_RESKILLING_RATE: Decimal = dec!(0.2500);
 
-/// Representa un miembro societario evaluado bajo `IRC Sections 414 and 1563` (`AAUFSA Sec. 5000G(b)`).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ControlledGroupMember {
     pub entity_id: String,
     pub domain: CorporateDomain,
     pub annual_gross_receipts_usd: Decimal,
-    /// Porcentaje de control de voto o valor dentro del grupo matriz-subsidiaria o hermano (0 a 100).
     pub common_control_ownership_pct: Decimal,
-    /// Indica si la entidad actúa como el usuario comercial final que desplaza fuerza laboral (`Sec. 5000H(d)`).
     pub is_end_user_displacing_entity: bool,
 }
 
-/// Parámetros de un activo automatizado (`Automated Asset` - "integrated software platform", `Sec. 5000H(a)`).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AutomatedAssetTaxAssessmentInput {
     pub assessment_id: String,
     pub domain: CorporateDomain,
-    /// Costo Imputado de Desplazamiento Humano (`Sec. 5000F(b)`): salarios + beneficios de empleados desplazados.
     pub imputed_human_displacement_cost_usd: Decimal,
-    /// Indica si el empleado desplazado fue reasignado internamente con salario >= 100% del previo.
     pub reassigned_at_equal_or_greater_wage: bool,
-    /// Meses de retención verificados en el nuevo puesto (`Sec. 5000G(a)`).
     pub verified_retention_months: u32,
-    /// Indica si ocurrió un despido sin causa justa antes de cumplir los 36 meses (`Sec. 5000G(c)` Clawback).
     pub premature_termination_without_cause: bool,
-    /// Tasa de interés estatutaria acumulada aplicable en caso de activación de *Clawback* (`Sec. 5000G(c)`).
     pub statutory_clawback_interest_rate: Decimal,
-    /// Indica si la operación corresponde exclusivamente a provisión de infraestructura SaaS a un tercero (`Sec. 5000H(d)`).
+    /// Indica si la operación corresponde exclusivamente a provisión de infraestructura `SaaS` a un tercero (`Sec. 5000H(d)`).
     pub is_pure_cloud_saas_vendor_provision: bool,
 }
 
@@ -457,12 +435,10 @@ pub struct AaufsaConsolidatedTaxResult {
     pub workforce_reskilling_trust_fund_25_pct_usd: Decimal,
 }
 
-/// Evalúa la consolidación de ingresos brutos bajo `IRC Sections 414 and 1563` (`AAUFSA Sec. 5000G(b)`).
-/// Toda entidad con control común >= 50% (bajo reglas de agregación de grupos controlados/afiliados)
-/// consolida el 100% de sus ingresos brutos para impedir la fragmentación societaria artificial.
+/// Consolida ingresos brutos bajo IRC Secs. 414 y 1563.
 ///
 /// # Errors
-/// Retorna `StructuralError` si el grupo está vacío o tiene porcentajes fuera de `[0, 100]`.
+/// Retorna `StructuralError` si el grupo es inválido o se produce desbordamiento.
 pub fn evaluate_irc_414_1563_controlled_group_receipts(
     members: &[ControlledGroupMember],
 ) -> Result<Decimal, StructuralError> {
@@ -481,8 +457,6 @@ pub fn evaluate_irc_414_1563_controlled_group_receipts(
             });
         }
 
-        // Regla de agregación estructural: entidades con >= 50% de control común en el grupo
-        // agregan la totalidad de sus ingresos brutos al cálculo del umbral de $5,000,000 USD.
         if member.common_control_ownership_pct >= dec!(50.00) {
             consolidated_receipts = consolidated_receipts
                 .checked_add(member.annual_gross_receipts_usd)
@@ -495,18 +469,16 @@ pub fn evaluate_irc_414_1563_controlled_group_receipts(
     Ok(consolidated_receipts.round_dp_with_strategy(2, RoundingStrategy::MidpointNearestEven))
 }
 
-/// Calcula de forma exacta y determinista la obligación tributaria bajo el Capítulo 56 del IRC (`AAUFSA`).
+/// Calcula el impuesto especial del Capítulo 56 del IRC y partición fiduciaria.
 ///
 /// # Errors
-/// Retorna `StructuralError` si el grupo controlado es inválido o si ocurre un desbordamiento decimal.
+/// Retorna `StructuralError` ante desbordamientos o validaciones fallidas.
 pub fn compute_aaufsa_chapter_56_obligation(
     group_members: &[ControlledGroupMember],
     input: &AutomatedAssetTaxAssessmentInput,
 ) -> Result<AaufsaConsolidatedTaxResult, StructuralError> {
     let consolidated_receipts = evaluate_irc_414_1563_controlled_group_receipts(group_members)?;
 
-    // 1. Regla Cloud/SaaS (AAUFSA Sec. 5000H(d)): El proveedor de software/infraestructura SaaS
-    // jamás asume el impuesto; recae 100% en la entidad comercial usuaria final que desplaza personal.
     if input.is_pure_cloud_saas_vendor_provision {
         return Ok(AaufsaConsolidatedTaxResult {
             consolidated_group_gross_receipts_usd: consolidated_receipts,
@@ -522,8 +494,6 @@ pub fn compute_aaufsa_chapter_56_obligation(
         });
     }
 
-    // 2. Exención de Pequeña Empresa consolidada bajo IRC Secs. 414 y 1563 (AAUFSA Sec. 5000G(b)):
-    // Solo aplica si la suma de ingresos brutos de TODO el grupo controlado es <= $5,000,000.00 USD.
     if consolidated_receipts <= AAUFSA_CONTROLLED_GROUP_THRESHOLD_USD {
         return Ok(AaufsaConsolidatedTaxResult {
             consolidated_group_gross_receipts_usd: consolidated_receipts,
@@ -539,7 +509,6 @@ pub fn compute_aaufsa_chapter_56_obligation(
         });
     }
 
-    // 3. Evaluación de Safe Harbor de 36 meses (Sec. 5000G(a)) y Regla de Recapitulacion/Clawback (Sec. 5000G(c)):
     let qualifies_safe_harbor = input.reassigned_at_equal_or_greater_wage
         && input.verified_retention_months >= AAUFSA_SAFE_HARBOR_MIN_MONTHS
         && !input.premature_termination_without_cause;
@@ -559,7 +528,6 @@ pub fn compute_aaufsa_chapter_56_obligation(
         });
     }
 
-    // 4. Cálculo del Impuesto Especial del 15.3% sobre el Costo Imputado de Desplazamiento Humano (Sec. 5000F(b)):
     let raw_base_tax = input
         .imputed_human_displacement_cost_usd
         .checked_mul(AAUFSA_EXCISE_TAX_RATE)
@@ -568,7 +536,6 @@ pub fn compute_aaufsa_chapter_56_obligation(
         })?;
     let base_tax = raw_base_tax.round_dp_with_strategy(2, RoundingStrategy::MidpointNearestEven);
 
-    // 5. Si hubo reclamación de Safe Harbor pero despido prematuro sin causa (< 36 meses), aplica Clawback (Sec. 5000G(c)):
     let clawback_triggered = input.reassigned_at_equal_or_greater_wage
         && input.premature_termination_without_cause
         && input.verified_retention_months < AAUFSA_SAFE_HARBOR_MIN_MONTHS;
@@ -590,7 +557,6 @@ pub fn compute_aaufsa_chapter_56_obligation(
         }
     })?;
 
-    // 6. Asignación Fiduciaria Estricta 75% OASDI / 25% Workforce Reskilling (AAUFSA Sec. 4):
     let oasdi_share = total_liability
         .checked_mul(AAUFSA_TRUST_SPLIT_OASDI_RATE)
         .ok_or_else(|| StructuralError::ArithmeticOverflowOrPrecisionFault {
@@ -598,7 +564,6 @@ pub fn compute_aaufsa_chapter_56_obligation(
         })?
         .round_dp_with_strategy(2, RoundingStrategy::MidpointNearestEven);
 
-    // El 25% restante se obtiene por diferencia exacta para garantizar 0.00 centavos de descuadre contable.
     let reskilling_share = total_liability.checked_sub(oasdi_share).ok_or_else(|| {
         StructuralError::ArithmeticOverflowOrPrecisionFault {
             context: "Desbordamiento calculando 25% Workforce Reskilling Trust Fund".to_string(),
@@ -620,7 +585,7 @@ pub fn compute_aaufsa_chapter_56_obligation(
 }
 
 // =============================================================================
-// 4. GENERADOR DE ASIENTOS DE PARTIDA DOBLE ACID SERIALIZABLE CON HASH WORM
+// 4. PARTIDA DOBLE Y ENCADENAMIENTO MERKLE
 // =============================================================================
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -646,10 +611,10 @@ pub struct SerializableJournalTransaction {
     pub current_merkle_hash: String,
 }
 
-/// Construye una transacción contable balanceada de partida doble y sella su hash SHA-256 WORM.
+/// Construye asiento contable balanceado y sella hash SHA-256.
 ///
 /// # Errors
-/// Retorna `StructuralError::UnbalancedDoubleEntryLedger` si la suma de débitos difiere de créditos.
+/// Retorna `StructuralError::UnbalancedDoubleEntryLedger` si débitos != créditos.
 pub fn build_serializable_aaufsa_journal(
     idempotency_key: &str,
     domain: CorporateDomain,
@@ -747,7 +712,6 @@ mod tests {
             plane: SystemPlane::FiscalPlaneAaufsa,
         });
 
-        // Flujo válido: Control -> Data -> Fiscal
         assert!(verifier
             .add_dependency(&DirectedEdge {
                 source_id: "ctrl-orchestrator".to_string(),
@@ -761,7 +725,6 @@ mod tests {
             })
             .is_ok());
 
-        // Intento ilegal de acoplamiento inverso: Fiscal -> Data
         let reverse_err = verifier.add_dependency(&DirectedEdge {
             source_id: "aaufsa-tax-ledger".to_string(),
             target_id: "vpp-dispatch-engine".to_string(),
@@ -777,8 +740,6 @@ mod tests {
 
     #[test]
     fn test_irc_414_1563_controlled_group_anti_fragmentation_and_15_3_tax() {
-        // Dos subsidiarias con $3,000,000 USD cada una intentan aparentar ser pequeñas empresas (< $5M),
-        // pero bajo IRC Sec. 414/1563 consolidan $6,000,000 USD (> $5M), activando el impuesto AAUFSA.
         let group = vec![
             ControlledGroupMember {
                 entity_id: "SUB-A".to_string(),
