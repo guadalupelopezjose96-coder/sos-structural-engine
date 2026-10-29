@@ -2,10 +2,10 @@
   "$schema": "http://cyclonedx.org/schema/bom-1.7.schema.json",
   "bomFormat": "CycloneDX",
   "specVersion": "1.7",
-  "serialNumber": "urn:uuid:472410a5-f81b-4d09-8b2b-1ee9a314eb47",
+  "serialNumber": "urn:uuid:d696c09d-013c-47fc-a23c-459ab81b3062",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-10-29T18:57:03+00:00",
+    "timestamp": "2026-10-29T18:58:31+00:00",
     "tools": {
       "components": [
         {
@@ -20,7 +20,7 @@
       ]
     },
     "component": {
-      "bom-ref": "136d2021-5f47-4b61-8fd5-557a0fd0d9f3",
+      "bom-ref": "7019afba-0f22-45da-a345-d121ff5a3cd1",
       "type": "application",
       "name": ".",
       "properties": [
@@ -33,7 +33,7 @@
   },
   "components": [
     {
-      "bom-ref": "21a0c1da-f7b2-4d9e-9486-bcdc2e4b397c",
+      "bom-ref": "3aec761c-6ba5-4d5c-aa1f-360120062d6c",
       "type": "application",
       "name": "Cargo.lock",
       "properties": [
@@ -1104,15 +1104,15 @@
   ],
   "dependencies": [
     {
-      "ref": "136d2021-5f47-4b61-8fd5-557a0fd0d9f3",
+      "ref": "3aec761c-6ba5-4d5c-aa1f-360120062d6c",
       "dependsOn": [
-        "21a0c1da-f7b2-4d9e-9486-bcdc2e4b397c"
+        "pkg:cargo/sos-structural-engine@1.0.0"
       ]
     },
     {
-      "ref": "21a0c1da-f7b2-4d9e-9486-bcdc2e4b397c",
+      "ref": "7019afba-0f22-45da-a345-d121ff5a3cd1",
       "dependsOn": [
-        "pkg:cargo/sos-structural-engine@1.0.0"
+        "3aec761c-6ba5-4d5c-aa1f-360120062d6c"
       ]
     },
     {

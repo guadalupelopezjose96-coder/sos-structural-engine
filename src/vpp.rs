@@ -64,23 +64,22 @@ pub fn compute_deterministic_vpp_dispatch(
         }
 
         if asset.measured_latency_microseconds > MAX_PERMISSIBLE_TELEMETRY_LATENCY_US {
+            let asset_id = &asset.asset_id;
+            let measured = asset.measured_latency_microseconds;
             return Err(StructuralError::ArithmeticOverflowOrPrecisionFault {
                 context: format!(
-                    "Telemetría DER {} excedió latencia crítica: {}us > {}us",
-                    asset.asset_id,
-                    asset.measured_latency_microseconds,
-                    MAX_PERMISSIBLE_TELEMETRY_LATENCY_US
+                    "Telemetria DER {asset_id} excedio latencia critica: {measured}us > {MAX_PERMISSIBLE_TELEMETRY_LATENCY_US}us"
                 ),
             });
         }
 
         if remaining_needed > 0 && asset.available_headroom_milliwatts > 0 {
             let take = remaining_needed.min(asset.available_headroom_milliwatts);
-            allocated_milliwatts = allocated_milliwatts
-                .checked_add(take)
-                .ok_or_else(|| StructuralError::ArithmeticOverflowOrPrecisionFault {
+            allocated_milliwatts = allocated_milliwatts.checked_add(take).ok_or_else(|| {
+                StructuralError::ArithmeticOverflowOrPrecisionFault {
                     context: "Desbordamiento en suma de despacho DER".to_string(),
-                })?;
+                }
+            })?;
             remaining_needed = remaining_needed.saturating_sub(take);
             active_count = active_count.saturating_add(1);
         }

@@ -1,4 +1,3 @@
-pub mod vpp;
 // =============================================================================
 // ORGANIZACIÓN: guadalupelopezjose96-org (ID: 320717657398 — Tech Arquitecture Pro-Elite)
 // COMPONENTE: System-of-Systems Topology, Bulkhead Isolation & AAUFSA Ledger Engine
@@ -20,6 +19,7 @@ pub mod vpp;
     clippy::wildcard_imports
 )]
 #![allow(clippy::struct_excessive_bools)]
+pub mod vpp;
 
 use rust_decimal::Decimal;
 use rust_decimal::RoundingStrategy;
