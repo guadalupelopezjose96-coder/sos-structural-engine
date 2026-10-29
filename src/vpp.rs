@@ -82,11 +82,11 @@ pub fn compute_deterministic_vpp_dispatch(
 
         if remaining_needed > 0 && asset.available_headroom_milliwatts > 0 {
             let take = remaining_needed.min(asset.available_headroom_milliwatts);
-            allocated_milliwatts = allocated_milliwatts
-                .checked_add(take)
-                .ok_or_else(|| StructuralError::ArithmeticOverflowOrPrecisionFault {
+            allocated_milliwatts = allocated_milliwatts.checked_add(take).ok_or_else(|| {
+                StructuralError::ArithmeticOverflowOrPrecisionFault {
                     context: "Desbordamiento en suma de despacho DER".to_string(),
-                })?;
+                }
+            })?;
             remaining_needed = remaining_needed.saturating_sub(take);
             active_count = active_count.saturating_add(1);
         }
