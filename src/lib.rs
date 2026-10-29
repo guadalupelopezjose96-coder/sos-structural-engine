@@ -584,11 +584,11 @@ pub fn compute_aaufsa_chapter_56_obligation(
         dec!(0.00)
     };
 
-    let total_liability = base_tax
-        .checked_add(clawback_interest)
-        .ok_or_else(|| StructuralError::ArithmeticOverflowOrPrecisionFault {
+    let total_liability = base_tax.checked_add(clawback_interest).ok_or_else(|| {
+        StructuralError::ArithmeticOverflowOrPrecisionFault {
             context: "Desbordamiento sumando obligación total Capítulo 56".to_string(),
-        })?;
+        }
+    })?;
 
     // 6. Asignación Fiduciaria Estricta 75% OASDI / 25% Workforce Reskilling (AAUFSA Sec. 4):
     let oasdi_share = total_liability
@@ -599,11 +599,11 @@ pub fn compute_aaufsa_chapter_56_obligation(
         .round_dp_with_strategy(2, RoundingStrategy::MidpointNearestEven);
 
     // El 25% restante se obtiene por diferencia exacta para garantizar 0.00 centavos de descuadre contable.
-    let reskilling_share = total_liability
-        .checked_sub(oasdi_share)
-        .ok_or_else(|| StructuralError::ArithmeticOverflowOrPrecisionFault {
+    let reskilling_share = total_liability.checked_sub(oasdi_share).ok_or_else(|| {
+        StructuralError::ArithmeticOverflowOrPrecisionFault {
             context: "Desbordamiento calculando 25% Workforce Reskilling Trust Fund".to_string(),
-        })?;
+        }
+    })?;
 
     Ok(AaufsaConsolidatedTaxResult {
         consolidated_group_gross_receipts_usd: consolidated_receipts,
@@ -814,7 +814,10 @@ mod tests {
             assert!(!val.is_exempt_small_business_sec_5000g_b);
             assert_eq!(val.base_excise_tax_15_3_pct_usd, dec!(153000.00));
             assert_eq!(val.oasdi_trust_fund_75_pct_usd, dec!(114750.00));
-            assert_eq!(val.workforce_reskilling_trust_fund_25_pct_usd, dec!(38250.00));
+            assert_eq!(
+                val.workforce_reskilling_trust_fund_25_pct_usd,
+                dec!(38250.00)
+            );
         }
     }
 }
