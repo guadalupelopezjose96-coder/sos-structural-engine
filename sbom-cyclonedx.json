@@ -2,10 +2,10 @@
   "$schema": "http://cyclonedx.org/schema/bom-1.7.schema.json",
   "bomFormat": "CycloneDX",
   "specVersion": "1.7",
-  "serialNumber": "urn:uuid:8f3383e1-e981-43f9-9ef7-bf2a48dd084f",
+  "serialNumber": "urn:uuid:101dcd38-e218-45a2-a198-b23241962353",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-10-29T19:08:34+00:00",
+    "timestamp": "2026-10-29T19:10:43+00:00",
     "tools": {
       "components": [
         {
@@ -20,7 +20,7 @@
       ]
     },
     "component": {
-      "bom-ref": "3daf34e9-5604-41b6-8b09-5bd3e7a67201",
+      "bom-ref": "81cc50e2-3ba2-4376-bcfd-6a633f398869",
       "type": "application",
       "name": ".",
       "properties": [
@@ -33,7 +33,7 @@
   },
   "components": [
     {
-      "bom-ref": "db1ffb0f-e352-4854-b249-a7ef2a1193d6",
+      "bom-ref": "8c4df459-7ba6-4471-97f7-21ea6c5bf44a",
       "type": "application",
       "name": "Cargo.lock",
       "properties": [
@@ -762,15 +762,15 @@
       ]
     },
     {
-      "bom-ref": "pkg:cargo/sos-structural-engine@1.0.0",
+      "bom-ref": "pkg:cargo/sos-structural-engine@1.2.0",
       "type": "library",
       "name": "sos-structural-engine",
-      "version": "1.0.0",
-      "purl": "pkg:cargo/sos-structural-engine@1.0.0",
+      "version": "1.2.0",
+      "purl": "pkg:cargo/sos-structural-engine@1.2.0",
       "properties": [
         {
           "name": "aquasecurity:trivy:PkgID",
-          "value": "sos-structural-engine@1.0.0"
+          "value": "sos-structural-engine@1.2.0"
         },
         {
           "name": "aquasecurity:trivy:PkgType",
@@ -1104,15 +1104,15 @@
   ],
   "dependencies": [
     {
-      "ref": "3daf34e9-5604-41b6-8b09-5bd3e7a67201",
+      "ref": "81cc50e2-3ba2-4376-bcfd-6a633f398869",
       "dependsOn": [
-        "db1ffb0f-e352-4854-b249-a7ef2a1193d6"
+        "8c4df459-7ba6-4471-97f7-21ea6c5bf44a"
       ]
     },
     {
-      "ref": "db1ffb0f-e352-4854-b249-a7ef2a1193d6",
+      "ref": "8c4df459-7ba6-4471-97f7-21ea6c5bf44a",
       "dependsOn": [
-        "pkg:cargo/sos-structural-engine@1.0.0"
+        "pkg:cargo/sos-structural-engine@1.2.0"
       ]
     },
     {
@@ -1378,7 +1378,7 @@
       ]
     },
     {
-      "ref": "pkg:cargo/sos-structural-engine@1.0.0",
+      "ref": "pkg:cargo/sos-structural-engine@1.2.0",
       "dependsOn": [
         "pkg:cargo/rust_decimal@1.43.0",
         "pkg:cargo/rust_decimal_macros@1.40.0",

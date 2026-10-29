@@ -1,5 +1,5 @@
 AVISOS DE SOFTWARE DE CODIGO ABIERTO DE TERCEROS (POL-SEC-OSS-001)
-Fecha: 2026-10-29T19:08:35Z
+Fecha: 2026-10-29T19:10:43Z
 -----------------------------------------------------------------
 Paquete: Cargo.lock (null)
 PURL: N/A
@@ -173,8 +173,8 @@ Paquete: sha2 (0.10.9)
 PURL: pkg:cargo/sha2@0.10.9
 Licencia SPDX: Ver repositorio origen
 -----------------------------------------------------------------
-Paquete: sos-structural-engine (1.0.0)
-PURL: pkg:cargo/sos-structural-engine@1.0.0
+Paquete: sos-structural-engine (1.2.0)
+PURL: pkg:cargo/sos-structural-engine@1.2.0
 Licencia SPDX: Ver repositorio origen
 -----------------------------------------------------------------
 Paquete: syn (2.0.119)
